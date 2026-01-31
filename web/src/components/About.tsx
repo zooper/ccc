@@ -151,9 +151,12 @@ function About({ onBack, colors }: AboutProps) {
 
         <div style={styles.footer}>
           <p style={{ marginBottom: '10px' }}>Built with care for our building community.</p>
-          <p style={{ fontSize: '0.8rem' }}>
+          <p style={{ fontSize: '0.8rem', marginBottom: '10px' }}>
             Wondering about the domain? AS215855 is my personal Autonomous System Number -
             a unique identifier used in internet routing. It's a bit of a network engineer hobby thing.
+          </p>
+          <p style={{ fontSize: '0.8rem' }}>
+            Questions or feedback? <a href="mailto:ccc@as215855.net" style={{ color: colors.accent }}>ccc@as215855.net</a>
           </p>
         </div>
       </div>
