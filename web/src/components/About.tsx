@@ -150,7 +150,11 @@ function About({ onBack, colors }: AboutProps) {
         </div>
 
         <div style={styles.footer}>
-          Built with care for our building community.
+          <p style={{ marginBottom: '10px' }}>Built with care for our building community.</p>
+          <p style={{ fontSize: '0.8rem' }}>
+            Wondering about the domain? AS215855 is my personal Autonomous System Number -
+            a unique identifier used in internet routing. It's a bit of a network engineer hobby thing.
+          </p>
         </div>
       </div>
     </div>
