@@ -20,6 +20,7 @@ type Endpoint struct {
 // ISPStatus represents aggregated status for an ISP
 type ISPStatus struct {
 	Name        string    `json:"name"`
+	ASN         int       `json:"asn,omitempty"`
 	TotalCount  int       `json:"total"`
 	UpCount     int       `json:"up"`
 	DownCount   int       `json:"down"`
@@ -28,11 +29,11 @@ type ISPStatus struct {
 
 // StatusResponse is returned by GET /api/status
 type StatusResponse struct {
-	ISP        string     `json:"isp"`
-	Registered bool       `json:"registered"`
-	CanRegister bool      `json:"can_register"` // True if ISP is allowed to register
-	EndpointID *string    `json:"endpoint_id"`
-	ISPStatus  *ISPStatus `json:"isp_status,omitempty"`
+	ISP         string     `json:"isp"`
+	Registered  bool       `json:"registered"`
+	CanRegister bool       `json:"can_register"` // True if ISP is allowed to register
+	EndpointID  *string    `json:"endpoint_id"`
+	ISPStatus   *ISPStatus `json:"isp_status,omitempty"`
 }
 
 // RegisterResponse is returned by POST /api/register

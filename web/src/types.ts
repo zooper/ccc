@@ -1,5 +1,6 @@
 export interface ISPStatus {
   name: string;
+  asn?: number;
   total: number;
   up: number;
   down: number;

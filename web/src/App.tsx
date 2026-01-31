@@ -225,7 +225,7 @@ function App() {
 
       {status && status.registered && (
         <div style={styles.registered}>
-          You're registered for monitoring ({status.isp.toUpperCase()})
+          You're registered for monitoring ({status.isp})
         </div>
       )}
 

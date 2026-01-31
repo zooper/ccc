@@ -33,6 +33,7 @@ type Config struct {
 	SetPassword   string   // If set, just set the password and exit
 	TrustedProxies []string // IPs/CIDRs trusted to set X-Forwarded-For
 	CORSOrigin    string   // Allowed CORS origin (empty = same-origin only)
+	ISPConfigPath string   // Path to ISP config JSON file
 }
 
 func main() {
@@ -69,6 +70,13 @@ func main() {
 
 	// Initialize ISP classifier
 	classifier := isp.NewClassifier()
+	if cfg.ISPConfigPath != "" {
+		if err := classifier.LoadConfig(cfg.ISPConfigPath); err != nil {
+			log.Fatalf("Failed to load ISP config: %v", err)
+		}
+	} else {
+		log.Println("WARNING: No ISP config file specified. Using fallback ASN org names.")
+	}
 
 	// Initialize pinger
 	pinger := monitor.NewPinger(5*time.Second, cfg.Privileged)
@@ -172,6 +180,7 @@ func parseConfig() Config {
 	flag.StringVar(&cfg.SetPassword, "set-password", "", "Set admin password and exit")
 	flag.StringVar(&trustedProxies, "trusted-proxies", getEnv("CCC_TRUSTED_PROXIES", ""), "Comma-separated list of trusted proxy IPs/CIDRs (e.g., 127.0.0.1,::1,10.0.0.0/8)")
 	flag.StringVar(&cfg.CORSOrigin, "cors-origin", getEnv("CCC_CORS_ORIGIN", ""), "Allowed CORS origin (empty = same-origin only)")
+	flag.StringVar(&cfg.ISPConfigPath, "isp-config", getEnv("CCC_ISP_CONFIG", ""), "Path to ISP config JSON file")
 
 	flag.Parse()
 

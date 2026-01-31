@@ -40,10 +40,20 @@ function StatusCard({ status, isCurrentISP, colors }: StatusCardProps) {
       alignItems: 'center',
       marginBottom: '15px',
     },
+    ispInfo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+    },
+    ispIcon: {
+      width: '32px',
+      height: '32px',
+      borderRadius: '6px',
+      objectFit: 'contain' as const,
+    },
     ispName: {
       fontSize: '1.25rem',
       fontWeight: 'bold',
-      textTransform: 'uppercase' as const,
       color: colors.text,
     },
     badge: {
@@ -89,10 +99,22 @@ function StatusCard({ status, isCurrentISP, colors }: StatusCardProps) {
     },
   };
 
+  const iconUrl = status.asn ? `https://static.ui.com/asn/${status.asn}_101x101.png` : null;
+
   return (
     <div style={styles.card}>
       <div style={styles.header}>
-        <span style={styles.ispName}>{status.name}</span>
+        <div style={styles.ispInfo}>
+          {iconUrl && (
+            <img
+              src={iconUrl}
+              alt={status.name}
+              style={styles.ispIcon}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          )}
+          <span style={styles.ispName}>{status.name}</span>
+        </div>
         <span style={styles.badge}>
           {status.total === 0 ? 'No Data' : `${Math.round(upPercent)}% Up`}
         </span>

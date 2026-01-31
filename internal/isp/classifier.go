@@ -1,38 +1,78 @@
 package isp
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"strings"
 	"sync"
 	"time"
 )
 
+// ISPConfig represents the configuration for a single ISP
+type ISPConfig struct {
+	Display string `json:"display"`
+	Allowed bool   `json:"allowed"`
+}
+
 // Classifier handles ISP classification via ASN lookups
 type Classifier struct {
-	cache       map[string]cacheEntry
-	cacheOrder  []string // Track insertion order for LRU-ish eviction
-	cacheMu     sync.RWMutex
-	cacheTTL    time.Duration
+	cache        map[string]cacheEntry
+	cacheOrder   []string // Track insertion order for LRU-ish eviction
+	cacheMu      sync.RWMutex
+	cacheTTL     time.Duration
 	maxCacheSize int
+	asnConfig    map[int]ISPConfig // ASN -> config mapping
 }
 
 type cacheEntry struct {
 	isp       string
+	allowed   bool
 	expiresAt time.Time
 }
 
 // NewClassifier creates a new ISP classifier
 func NewClassifier() *Classifier {
 	return &Classifier{
-		cache:       make(map[string]cacheEntry),
-		cacheOrder:  make([]string, 0),
-		cacheTTL:    24 * time.Hour,
-		maxCacheSize: 10000, // Limit cache to 10k entries
+		cache:        make(map[string]cacheEntry),
+		cacheOrder:   make([]string, 0),
+		cacheTTL:     24 * time.Hour,
+		maxCacheSize: 10000,
+		asnConfig:    make(map[int]ISPConfig),
 	}
 }
 
-// ClassifyISP returns the normalized ISP name for an IP address
+// LoadConfig loads ISP configuration from a JSON file
+func (c *Classifier) LoadConfig(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read ISP config: %w", err)
+	}
+
+	// Parse JSON with string keys (ASN numbers as strings)
+	var rawConfig map[string]ISPConfig
+	if err := json.Unmarshal(data, &rawConfig); err != nil {
+		return fmt.Errorf("failed to parse ISP config: %w", err)
+	}
+
+	// Convert string keys to int
+	c.asnConfig = make(map[int]ISPConfig)
+	for asnStr, config := range rawConfig {
+		var asn int
+		if _, err := fmt.Sscanf(asnStr, "%d", &asn); err != nil {
+			log.Printf("Warning: invalid ASN in config: %s", asnStr)
+			continue
+		}
+		c.asnConfig[asn] = config
+	}
+
+	log.Printf("Loaded ISP config: %d ASN mappings", len(c.asnConfig))
+	return nil
+}
+
+// ClassifyISP returns the ISP display name for an IP address
 func (c *Classifier) ClassifyISP(ip string) (string, error) {
 	// Check cache first
 	c.cacheMu.RLock()
@@ -45,21 +85,27 @@ func (c *Classifier) ClassifyISP(ip string) (string, error) {
 	// Perform ASN lookup
 	asn, _, err := c.LookupASN(ip)
 	if err != nil {
-		return "unknown", err
+		return "Unknown", err
 	}
 
 	if asn == 0 {
-		return "unknown", nil
+		return "Unknown", nil
 	}
 
-	// Get ASN info
-	_, org, err := c.LookupASNInfo(asn)
-	if err != nil {
-		return "unknown", err
+	// Look up ASN in config
+	var ispName string
+	if config, ok := c.asnConfig[asn]; ok {
+		ispName = config.Display
+	} else {
+		// Fallback: get org name from ASN info
+		_, org, err := c.LookupASNInfo(asn)
+		if err != nil || org == "" {
+			ispName = "Unknown"
+		} else {
+			// Use a cleaned-up version of the org name
+			ispName = cleanOrgName(org)
+		}
 	}
-
-	// Normalize ISP name
-	isp := c.normalizeISP(org)
 
 	// Cache the result with size limit
 	c.cacheMu.Lock()
@@ -72,13 +118,72 @@ func (c *Classifier) ClassifyISP(ip string) (string, error) {
 	}
 
 	c.cache[ip] = cacheEntry{
-		isp:       isp,
+		isp:       ispName,
 		expiresAt: time.Now().Add(c.cacheTTL),
 	}
 	c.cacheOrder = append(c.cacheOrder, ip)
 	c.cacheMu.Unlock()
 
-	return isp, nil
+	return ispName, nil
+}
+
+// IsAllowed checks if an ISP (by display name) is allowed to register
+func (c *Classifier) IsAllowed(ispDisplay string) bool {
+	for _, config := range c.asnConfig {
+		if config.Display == ispDisplay {
+			return config.Allowed
+		}
+	}
+	return false
+}
+
+// IsASNAllowed checks if a specific ASN is allowed to register
+func (c *Classifier) IsASNAllowed(asn int) bool {
+	if config, ok := c.asnConfig[asn]; ok {
+		return config.Allowed
+	}
+	return false
+}
+
+// GetAllowedISPs returns a list of all allowed ISP display names
+func (c *Classifier) GetAllowedISPs() []string {
+	seen := make(map[string]bool)
+	var allowed []string
+	for _, config := range c.asnConfig {
+		if config.Allowed && !seen[config.Display] {
+			seen[config.Display] = true
+			allowed = append(allowed, config.Display)
+		}
+	}
+	return allowed
+}
+
+// GetASNForDisplay returns the first ASN for a given display name
+func (c *Classifier) GetASNForDisplay(display string) int {
+	for asn, config := range c.asnConfig {
+		if config.Display == display {
+			return asn
+		}
+	}
+	return 0
+}
+
+// cleanOrgName extracts a cleaner name from ASN org string
+// e.g., "COMCAST-7922 - Comcast Cable Communications, Inc., US" -> "Comcast Cable Communications"
+func cleanOrgName(org string) string {
+	// Try to get the part after " - "
+	if idx := strings.Index(org, " - "); idx > 0 {
+		org = org[idx+3:]
+	}
+	// Remove trailing ", US" or similar country codes
+	if idx := strings.LastIndex(org, ", "); idx > 0 && len(org)-idx <= 5 {
+		org = org[:idx]
+	}
+	// Remove ", Inc." or ", LLC" etc.
+	for _, suffix := range []string{", Inc.", ", LLC", ", Ltd.", ", Corp."} {
+		org = strings.TrimSuffix(org, suffix)
+	}
+	return strings.TrimSpace(org)
 }
 
 // LookupASN queries Team Cymru DNS for ASN information
@@ -158,40 +263,6 @@ func (c *Classifier) LookupASNInfo(asn int) (name string, org string, err error)
 	}
 
 	return name, org, nil
-}
-
-// normalizeISP maps ASN organization names to normalized ISP identifiers
-func (c *Classifier) normalizeISP(org string) string {
-	orgUpper := strings.ToUpper(org)
-
-	// Known ISP mappings
-	ispMappings := map[string]string{
-		"COMCAST":   "comcast",
-		"XFINITY":   "comcast",
-		"STARRY":    "starry",
-		"VERIZON":   "verizon",
-		"FIOS":      "verizon",
-		"ATT":       "att",
-		"AT&T":      "att",
-		"SPECTRUM":  "spectrum",
-		"CHARTER":   "spectrum",
-		"RCNCF":     "rcn",
-		"RCN":       "rcn",
-		"OPTIMUM":   "optimum",
-		"CABLEVISION": "optimum",
-		"COX":       "cox",
-		"GOOGLE":    "google-fiber",
-		"T-MOBILE":  "tmobile",
-		"TMOBILE":   "tmobile",
-	}
-
-	for keyword, isp := range ispMappings {
-		if strings.Contains(orgUpper, keyword) {
-			return isp
-		}
-	}
-
-	return "unknown"
 }
 
 // ClearCache removes all cached entries

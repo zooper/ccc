@@ -80,6 +80,25 @@ func (db *DB) migrate() error {
 	)`)
 	db.conn.Exec("CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events(timestamp)")
 
+	// Migrate old ISP keys to display names
+	ispMigrations := map[string]string{
+		"comcast": "Comcast / Xfinity",
+		"starry":  "Starry",
+		"verizon": "Verizon / Fios",
+		"att":     "AT&T",
+		"spectrum": "Spectrum / Charter",
+		"rcn":     "RCN",
+		"optimum": "Optimum / Cablevision",
+		"cox":     "Cox",
+		"google-fiber": "Google Fiber",
+		"tmobile": "T-Mobile",
+		"unknown": "Unknown",
+	}
+	for oldKey, newName := range ispMigrations {
+		db.conn.Exec("UPDATE endpoints SET isp = ? WHERE isp = ?", newName, oldKey)
+		db.conn.Exec("UPDATE events SET isp = ? WHERE isp = ?", newName, oldKey)
+	}
+
 	log.Println("Database migrations completed")
 	return nil
 }

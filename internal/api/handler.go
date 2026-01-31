@@ -17,12 +17,6 @@ import (
 
 const Version = "0.1.0"
 
-// AllowedISPs defines which ISPs can register for monitoring
-var AllowedISPs = map[string]bool{
-	"comcast": true,
-	"starry":  true,
-}
-
 // MetricsProvider interface for checking outage status and metrics
 type MetricsProvider interface {
 	HasAnyOutage() bool
@@ -100,7 +94,7 @@ func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
 	response := models.StatusResponse{
 		ISP:         ispName,
 		Registered:  endpoint != nil,
-		CanRegister: AllowedISPs[ispName],
+		CanRegister: h.classifier.IsAllowed(ispName),
 	}
 
 	if endpoint != nil {
@@ -157,7 +151,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if ISP is allowed to register
-	if !AllowedISPs[ispName] {
+	if !h.classifier.IsAllowed(ispName) {
 		log.Printf("Registration rejected for %s: ISP %s not allowed", clientIP, ispName)
 		writeError(w, http.StatusForbidden, "Registration is only available for building residents")
 		return
@@ -203,6 +197,11 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Failed to get ISP stats: %v", err)
 		writeError(w, http.StatusInternalServerError, "Database error")
 		return
+	}
+
+	// Add ASN for each ISP (for icon lookup)
+	for i := range stats {
+		stats[i].ASN = h.classifier.GetASNForDisplay(stats[i].Name)
 	}
 
 	// Determine if there's a likely outage

@@ -85,7 +85,7 @@ function OptInPrompt({ isp, onRegistered, colors }: OptInPromptProps) {
   return (
     <div style={styles.container}>
       <div style={styles.ispBadge}>
-        Detected ISP: {isp.toUpperCase()}
+        Detected ISP: {isp}
       </div>
       <h2 style={styles.title}>Join Community Monitoring</h2>
       <p style={styles.description}>
