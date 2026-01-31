@@ -1,6 +1,9 @@
 # Binaries
 bin/
-ccc-api
+/ccc-api
+
+# Embedded static files (generated from web/dist)
+cmd/ccc-api/static/
 *.exe
 *.exe~
 *.dll
