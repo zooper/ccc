@@ -228,18 +228,18 @@ function App() {
           {status.endpoint_status === 'unreachable' ? (
             <>
               <div style={{ marginBottom: '8px' }}>
-                You're registered ({status.isp}), but your connection doesn't respond to our monitoring.
+                You've joined monitoring ({status.isp}), but your connection doesn't respond to our checks.
               </div>
               <div style={{ fontSize: '0.875rem', color: colors.textMuted }}>
                 This is normal if your router blocks ping requests. You can still view the dashboard and see how others are doing.
               </div>
             </>
           ) : status.endpoint_status === 'up' ? (
-            <>You're registered and online ({status.isp})</>
+            <>You're participating in monitoring and online ({status.isp})</>
           ) : status.endpoint_status === 'down' ? (
-            <>You're registered but currently appear offline ({status.isp})</>
+            <>You're participating but currently appear offline ({status.isp})</>
           ) : (
-            <>You're registered for monitoring ({status.isp})</>
+            <>You're participating in monitoring ({status.isp})</>
           )}
         </div>
       )}

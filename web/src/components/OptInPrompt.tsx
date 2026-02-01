@@ -20,7 +20,7 @@ function OptInPrompt({ isp, onRegistered, colors }: OptInPromptProps) {
       await register();
       onRegistered();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(err instanceof Error ? err.message : 'Failed to join monitoring');
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ function OptInPrompt({ isp, onRegistered, colors }: OptInPromptProps) {
         onClick={handleRegister}
         disabled={loading}
       >
-        {loading ? 'Registering...' : 'Join Monitoring'}
+        {loading ? 'Joining...' : 'Join Monitoring'}
       </button>
       {error && (
         <div style={styles.error}>{error}</div>

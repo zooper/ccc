@@ -101,21 +101,26 @@ function About({ onBack, colors }: AboutProps) {
           <ul style={styles.list}>
             <li style={styles.listItem}>
               <span style={styles.highlight}>Opt-in Monitoring:</span> Residents can choose to participate
-              by registering their connection. Your IP is used only for connectivity checks.
+              by joining the monitoring. Your IP is used only for connectivity checks.
             </li>
             <li style={styles.listItem}>
               <span style={styles.highlight}>Regular Checks:</span> The system performs connectivity checks
-              every minute to all registered endpoints.
+              every minute to all participating connections.
             </li>
             <li style={styles.listItem}>
               <span style={styles.highlight}>ISP Detection:</span> Your ISP is automatically detected so we
               can group results and identify if issues are ISP-specific.
             </li>
             <li style={styles.listItem}>
-              <span style={styles.highlight}>Outage Detection:</span> When multiple endpoints from the same
+              <span style={styles.highlight}>Outage Detection:</span> When multiple connections from the same
               ISP go down simultaneously, the system flags a likely ISP outage.
             </li>
           </ul>
+          <p style={styles.paragraph}>
+            <span style={styles.highlight}>Note:</span> Some routers block ping requests for security reasons.
+            If yours does, you can still join and view the dashboard - you just won't contribute to the
+            monitoring data.
+          </p>
         </div>
 
         <div style={styles.section}>
@@ -137,7 +142,7 @@ function About({ onBack, colors }: AboutProps) {
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>Supported ISPs</h2>
           <p style={styles.paragraph}>
-            Currently, registration is available for residents using:
+            Currently, monitoring is available for residents using:
           </p>
           <ul style={styles.list}>
             <li style={styles.listItem}><span style={styles.highlight}>Comcast</span></li>

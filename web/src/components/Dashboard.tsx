@@ -154,7 +154,7 @@ function Dashboard({ data, currentISP, colors, events }: DashboardProps) {
 
       {data.isps.length === 0 ? (
         <div style={styles.noData}>
-          No monitoring data yet. Be the first to register!
+          No monitoring data yet. Be the first to join!
         </div>
       ) : (
         <div style={styles.grid}>
