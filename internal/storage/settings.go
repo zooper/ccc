@@ -3,12 +3,18 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	settingAdminPasswordHash = "admin_password_hash"
+	SettingOutageThreshold   = "outage_threshold"
+)
+
+const (
+	DefaultOutageThreshold = 0.5 // 50%
 )
 
 // SetAdminPassword sets the admin password (stores bcrypt hash)
@@ -79,4 +85,25 @@ func (db *DB) SetSetting(key, value string) error {
 		return fmt.Errorf("failed to save setting: %w", err)
 	}
 	return nil
+}
+
+// GetOutageThreshold returns the outage threshold (0.0-1.0), or default if not set
+func (db *DB) GetOutageThreshold() float64 {
+	val, err := db.GetSetting(SettingOutageThreshold)
+	if err != nil || val == "" {
+		return DefaultOutageThreshold
+	}
+	threshold, err := strconv.ParseFloat(val, 64)
+	if err != nil || threshold < 0 || threshold > 1 {
+		return DefaultOutageThreshold
+	}
+	return threshold
+}
+
+// SetOutageThreshold sets the outage threshold (0.0-1.0)
+func (db *DB) SetOutageThreshold(threshold float64) error {
+	if threshold < 0 || threshold > 1 {
+		return fmt.Errorf("threshold must be between 0 and 1")
+	}
+	return db.SetSetting(SettingOutageThreshold, strconv.FormatFloat(threshold, 'f', 2, 64))
 }

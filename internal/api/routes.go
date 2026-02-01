@@ -19,6 +19,8 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux, staticFS fs.FS) {
 	mux.HandleFunc("POST /api/admin/endpoints", h.requireAdminAuth(h.AdminAddEndpoint))
 	mux.HandleFunc("DELETE /api/admin/endpoints/{id}", h.requireAdminAuth(h.AdminDeleteEndpoint))
 	mux.HandleFunc("GET /api/admin/metrics", h.requireAdminAuth(h.AdminMetrics))
+	mux.HandleFunc("GET /api/admin/settings", h.requireAdminAuth(h.AdminGetSettings))
+	mux.HandleFunc("PUT /api/admin/settings", h.requireAdminAuth(h.AdminUpdateSettings))
 
 	// Static files (if provided)
 	if staticFS != nil {

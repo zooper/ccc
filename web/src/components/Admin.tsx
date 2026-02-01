@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { adminListEndpoints, adminAddEndpoint, adminDeleteEndpoint, adminGetMetrics } from '../api';
-import type { AdminEndpoint, AdminMetrics } from '../types';
+import { adminListEndpoints, adminAddEndpoint, adminDeleteEndpoint, adminGetMetrics, adminGetSettings, adminUpdateSettings } from '../api';
+import type { AdminEndpoint, AdminMetrics, AdminSettings } from '../types';
 import type { ThemeColors } from '../App';
 
 interface AdminProps {
@@ -19,7 +19,9 @@ function Admin({ onBack, colors }: AdminProps) {
   const [newISP, setNewISP] = useState('');
   const [adding, setAdding] = useState(false);
   const [loginPassword, setLoginPassword] = useState('');
-  const [activeTab, setActiveTab] = useState<'metrics' | 'endpoints'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'endpoints' | 'settings'>('metrics');
+  const [settings, setSettings] = useState<AdminSettings | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const styles = {
     container: {
@@ -268,12 +270,14 @@ function Admin({ onBack, colors }: AdminProps) {
   const fetchData = async (pwd: string) => {
     setLoading(true);
     try {
-      const [endpointsData, metricsData] = await Promise.all([
+      const [endpointsData, metricsData, settingsData] = await Promise.all([
         adminListEndpoints(pwd),
         adminGetMetrics(pwd),
+        adminGetSettings(pwd),
       ]);
       setEndpoints(endpointsData || []);
       setMetrics(metricsData);
+      setSettings(settingsData);
       setError(null);
       setIsLoggedIn(true);
       sessionStorage.setItem('adminPassword', pwd);
@@ -315,6 +319,20 @@ function Admin({ onBack, colors }: AdminProps) {
     setIsLoggedIn(false);
     setEndpoints([]);
     setMetrics(null);
+    setSettings(null);
+  };
+
+  const handleSaveSettings = async (newThreshold: number) => {
+    setSavingSettings(true);
+    setError(null);
+    try {
+      const updated = await adminUpdateSettings(password, { outage_threshold: newThreshold });
+      setSettings(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save settings');
+    } finally {
+      setSavingSettings(false);
+    }
   };
 
   const formatBytes = (bytes: number) => {
@@ -666,6 +684,48 @@ function Admin({ onBack, colors }: AdminProps) {
     </>
   );
 
+  const renderSettings = () => {
+    const currentThreshold = settings?.outage_threshold ?? 0.5;
+    const thresholdPercent = Math.round(currentThreshold * 100);
+
+    return (
+      <div style={styles.section}>
+        <div style={styles.sectionTitle}>Outage Detection</div>
+        <p style={{ color: colors.textMuted, marginBottom: '20px', lineHeight: 1.6 }}>
+          Configure the threshold for detecting ISP outages. When the percentage of down endpoints
+          for an ISP exceeds this threshold, the dashboard will show a "likely outage" warning.
+        </p>
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <label style={{ color: colors.text, fontWeight: 'bold' }}>
+              Outage Threshold: {thresholdPercent}%
+            </label>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <span style={{ color: colors.textMuted, fontSize: '0.875rem' }}>10%</span>
+            <input
+              type="range"
+              min="10"
+              max="90"
+              step="5"
+              value={thresholdPercent}
+              onChange={(e) => {
+                const newThreshold = parseInt(e.target.value) / 100;
+                handleSaveSettings(newThreshold);
+              }}
+              disabled={savingSettings}
+              style={{ flex: 1, cursor: savingSettings ? 'not-allowed' : 'pointer' }}
+            />
+            <span style={{ color: colors.textMuted, fontSize: '0.875rem' }}>90%</span>
+          </div>
+          <p style={{ color: colors.textDimmed, fontSize: '0.75rem', marginTop: '10px' }}>
+            {savingSettings ? 'Saving...' : `Outage will be detected when >${thresholdPercent}% of endpoints for an ISP are down.`}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -702,9 +762,20 @@ function Admin({ onBack, colors }: AdminProps) {
         >
           Endpoints ({endpoints.length})
         </button>
+        <button
+          style={{
+            ...styles.tab,
+            ...(activeTab === 'settings' ? styles.tabActive : {}),
+          }}
+          onClick={() => setActiveTab('settings')}
+        >
+          Settings
+        </button>
       </div>
 
-      {activeTab === 'metrics' ? renderMetrics() : renderEndpoints()}
+      {activeTab === 'metrics' && renderMetrics()}
+      {activeTab === 'endpoints' && renderEndpoints()}
+      {activeTab === 'settings' && renderSettings()}
     </div>
   );
 }

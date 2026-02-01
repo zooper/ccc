@@ -212,10 +212,11 @@ func (h *Handler) Dashboard(w http.ResponseWriter, r *http.Request) {
 		likelyOutage = h.metricsProvider.HasAnyOutage()
 	}
 
-	// Fallback: check if any ISP has >50% of endpoints down
+	// Fallback: check if any ISP has more than threshold% of endpoints down
 	if !likelyOutage {
+		threshold := h.db.GetOutageThreshold()
 		for _, s := range stats {
-			if s.TotalCount > 0 && float64(s.DownCount)/float64(s.TotalCount) > 0.5 {
+			if s.TotalCount > 0 && float64(s.DownCount)/float64(s.TotalCount) > threshold {
 				likelyOutage = true
 				break
 			}
@@ -588,4 +589,42 @@ func (h *Handler) AdminMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, metrics)
+}
+
+// AdminSettings represents the configurable settings
+type AdminSettings struct {
+	OutageThreshold float64 `json:"outage_threshold"`
+}
+
+// AdminGetSettings handles GET /api/admin/settings
+func (h *Handler) AdminGetSettings(w http.ResponseWriter, r *http.Request) {
+	settings := AdminSettings{
+		OutageThreshold: h.db.GetOutageThreshold(),
+	}
+	writeJSON(w, http.StatusOK, settings)
+}
+
+// AdminUpdateSettings handles PUT /api/admin/settings
+func (h *Handler) AdminUpdateSettings(w http.ResponseWriter, r *http.Request) {
+	var req AdminSettings
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	if req.OutageThreshold < 0 || req.OutageThreshold > 1 {
+		writeError(w, http.StatusBadRequest, "Outage threshold must be between 0 and 1")
+		return
+	}
+
+	if err := h.db.SetOutageThreshold(req.OutageThreshold); err != nil {
+		log.Printf("Failed to save settings: %v", err)
+		writeError(w, http.StatusInternalServerError, "Failed to save settings")
+		return
+	}
+
+	log.Printf("Admin updated settings: outage_threshold=%.0f%%", req.OutageThreshold*100)
+	writeJSON(w, http.StatusOK, AdminSettings{
+		OutageThreshold: h.db.GetOutageThreshold(),
+	})
 }

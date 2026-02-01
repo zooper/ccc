@@ -102,3 +102,7 @@ export interface AdminMetrics {
   database_path: string;
   uptime_history: UptimePoint[];
 }
+
+export interface AdminSettings {
+  outage_threshold: number;
+}

@@ -1,4 +1,4 @@
-import type { StatusResponse, RegisterResponse, DashboardResponse, HealthResponse, AdminEndpoint, AdminAddRequest, AdminMetrics, EventsResponse } from './types';
+import type { StatusResponse, RegisterResponse, DashboardResponse, HealthResponse, AdminEndpoint, AdminAddRequest, AdminMetrics, EventsResponse, AdminSettings } from './types';
 
 const API_BASE = '/api';
 
@@ -75,5 +75,19 @@ export async function adminDeleteEndpoint(password: string, id: string): Promise
 export async function adminGetMetrics(password: string): Promise<AdminMetrics> {
   return fetchJSON<AdminMetrics>(`${API_BASE}/admin/metrics`, {
     headers: authHeader(password),
+  });
+}
+
+export async function adminGetSettings(password: string): Promise<AdminSettings> {
+  return fetchJSON<AdminSettings>(`${API_BASE}/admin/settings`, {
+    headers: authHeader(password),
+  });
+}
+
+export async function adminUpdateSettings(password: string, settings: AdminSettings): Promise<AdminSettings> {
+  return fetchJSON<AdminSettings>(`${API_BASE}/admin/settings`, {
+    method: 'PUT',
+    headers: authHeader(password),
+    body: JSON.stringify(settings),
   });
 }
