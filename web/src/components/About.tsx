@@ -137,6 +137,11 @@ function About({ onBack, colors }: AboutProps) {
             No personal information is collected, and the dashboard only shows aggregated,
             anonymized statistics. Individual connection details are never exposed publicly.
           </p>
+          <p style={styles.paragraph}>
+            <span style={styles.highlight}>Why no notifications?</span> We intentionally don't offer
+            outage notifications because that would require collecting email addresses or phone numbers.
+            We believe in keeping participation completely anonymous.
+          </p>
         </div>
 
         <div style={styles.section}>
