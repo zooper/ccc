@@ -68,7 +68,7 @@ Dashboard:
 
 ## Data Retention / Cleanup
 Automatic lifecycle rules:
-- Endpoints not seen for 30 days are expired.
+- Endpoints not seen for 3 days are expired.
 - Uptime history older than 7 days is cleaned up.
 - Events older than 7 days are cleaned up.
 
@@ -116,7 +116,7 @@ cd web && npm run dev
 | CCC_DB_PATH | --db | ./ccc.db | SQLite database path |
 | CCC_LISTEN_ADDR | --listen | :8080 | Server listen address |
 | CCC_PING_INTERVAL | --ping-interval | 60s | How often to ping endpoints |
-| CCC_EXPIRE_DAYS | --expire-days | 30 | Days before inactive endpoints expire |
+| CCC_EXPIRE_DAYS | --expire-days | 3 | Days before inactive endpoints expire |
 | CCC_PRIVILEGED | --privileged | false | Use raw socket ICMP (requires CAP_NET_RAW) |
 | CCC_TRUSTED_PROXIES | --trusted-proxies | | Comma-separated trusted proxy IPs/CIDRs |
 | CCC_CORS_ORIGIN | --cors-origin | | Allowed CORS origin |

@@ -106,7 +106,7 @@ function OptInPrompt({ isp, onRegistered, colors }: OptInPromptProps) {
         <div style={styles.error}>{error}</div>
       )}
       <p style={styles.privacy}>
-        Inactive connections are automatically removed after 30 days.
+        Inactive connections are automatically removed after 3 days.
       </p>
     </div>
   );

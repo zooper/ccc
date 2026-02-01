@@ -175,7 +175,7 @@ func parseConfig() Config {
 	flag.StringVar(&cfg.DBPath, "db", getEnv("CCC_DB_PATH", "./ccc.db"), "Database file path")
 	flag.StringVar(&cfg.ListenAddr, "listen", getEnv("CCC_LISTEN_ADDR", ":8080"), "Listen address")
 	flag.DurationVar(&cfg.PingInterval, "ping-interval", getEnvDuration("CCC_PING_INTERVAL", 60*time.Second), "Ping interval")
-	flag.IntVar(&cfg.ExpireDays, "expire-days", getEnvInt("CCC_EXPIRE_DAYS", 30), "Days before endpoint expiry")
+	flag.IntVar(&cfg.ExpireDays, "expire-days", getEnvInt("CCC_EXPIRE_DAYS", 3), "Days before endpoint expiry")
 	flag.BoolVar(&cfg.Privileged, "privileged", getEnvBool("CCC_PRIVILEGED", false), "Use privileged (raw socket) ICMP")
 	flag.StringVar(&cfg.SetPassword, "set-password", "", "Set admin password and exit")
 	flag.StringVar(&trustedProxies, "trusted-proxies", getEnv("CCC_TRUSTED_PROXIES", ""), "Comma-separated list of trusted proxy IPs/CIDRs (e.g., 127.0.0.1,::1,10.0.0.0/8)")
