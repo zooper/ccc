@@ -12,6 +12,7 @@ export interface StatusResponse {
   registered: boolean;
   can_register: boolean;
   endpoint_id: string | null;
+  endpoint_status?: string; // "up", "down", "unreachable", "unknown"
   isp_status?: ISPStatus;
 }
 

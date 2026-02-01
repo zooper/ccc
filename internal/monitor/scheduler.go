@@ -14,7 +14,6 @@ import (
 type Scheduler struct {
 	db           *storage.DB
 	pinger       *Pinger
-	tracer       *Tracer
 	pingInterval time.Duration
 	expireDays   int
 	stopCh       chan struct{}
@@ -39,7 +38,6 @@ func NewScheduler(db *storage.DB, pinger *Pinger, pingInterval time.Duration, ex
 	return &Scheduler{
 		db:           db,
 		pinger:       pinger,
-		tracer:       NewTracer(2*time.Second, 30), // 2s timeout per hop, max 30 hops
 		pingInterval: pingInterval,
 		expireDays:   expireDays,
 		stopCh:       make(chan struct{}),
@@ -92,6 +90,14 @@ func (s *Scheduler) pingLoop(ctx context.Context) {
 	}
 }
 
+// pingResult holds the result of pinging an endpoint
+type pingResult struct {
+	endpoint  models.Endpoint
+	oldStatus string
+	newStatus string
+	lastOK    time.Time
+}
+
 func (s *Scheduler) runPingCycle() {
 	endpoints, err := s.db.ListAll()
 	if err != nil {
@@ -103,37 +109,74 @@ func (s *Scheduler) runPingCycle() {
 		return
 	}
 
-	log.Printf("Starting ping cycle for %d endpoints", len(endpoints))
+	log.Printf("Starting ping cycle for %d endpoints (parallel)", len(endpoints))
 
-	var upCount, downCount int
+	// Use worker pool for parallel pinging
+	numWorkers := 50 // Concurrent ping workers
+	if numWorkers > len(endpoints) {
+		numWorkers = len(endpoints)
+	}
 
+	jobs := make(chan models.Endpoint, len(endpoints))
+	results := make(chan pingResult, len(endpoints))
+
+	// Start workers
+	var workerWg sync.WaitGroup
+	for i := 0; i < numWorkers; i++ {
+		workerWg.Add(1)
+		go func() {
+			defer workerWg.Done()
+			for ep := range jobs {
+				oldStatus := ep.Status
+				status, lastOK := s.monitorEndpoint(&ep)
+				results <- pingResult{
+					endpoint:  ep,
+					oldStatus: oldStatus,
+					newStatus: status,
+					lastOK:    lastOK,
+				}
+			}
+		}()
+	}
+
+	// Send jobs
 	for _, ep := range endpoints {
-		oldStatus := ep.Status
-		status, lastOK := s.monitorEndpoint(&ep)
+		jobs <- ep
+	}
+	close(jobs)
 
-		if status == "up" {
+	// Wait for workers to finish, then close results
+	go func() {
+		workerWg.Wait()
+		close(results)
+	}()
+
+	// Collect results
+	var upCount, downCount int
+	for result := range results {
+		if result.newStatus == "up" {
 			upCount++
 		} else {
 			downCount++
 		}
 
 		// Record status change events
-		if oldStatus != status && oldStatus != "unknown" {
-			if status == "down" {
-				msg := ep.ISP + " endpoint went down"
-				if err := s.db.RecordEvent("down", ep.ISP, ep.ID, msg); err != nil {
+		if result.oldStatus != result.newStatus && result.oldStatus != "unknown" {
+			if result.newStatus == "down" {
+				msg := result.endpoint.ISP + " endpoint went down"
+				if err := s.db.RecordEvent("down", result.endpoint.ISP, result.endpoint.ID, msg); err != nil {
 					log.Printf("Failed to record down event: %v", err)
 				}
-			} else if status == "up" && oldStatus == "down" {
-				msg := ep.ISP + " endpoint recovered"
-				if err := s.db.RecordEvent("up", ep.ISP, ep.ID, msg); err != nil {
+			} else if result.newStatus == "up" && result.oldStatus == "down" {
+				msg := result.endpoint.ISP + " endpoint recovered"
+				if err := s.db.RecordEvent("up", result.endpoint.ISP, result.endpoint.ID, msg); err != nil {
 					log.Printf("Failed to record up event: %v", err)
 				}
 			}
 		}
 
-		if err := s.db.UpdateStatus(ep.ID, status, lastOK); err != nil {
-			log.Printf("Failed to update status for %s: %v", ep.ID, err)
+		if err := s.db.UpdateStatus(result.endpoint.ID, result.newStatus, result.lastOK); err != nil {
+			log.Printf("Failed to update status for %s: %v", result.endpoint.ID, err)
 		}
 	}
 
@@ -245,58 +288,20 @@ func (s *Scheduler) HasAnyOutage() bool {
 	return false
 }
 
-// monitorEndpoint monitors a single endpoint with fallback to traceroute
+// monitorEndpoint monitors a single endpoint via direct ping
 func (s *Scheduler) monitorEndpoint(ep *models.Endpoint) (status string, lastOK time.Time) {
-	// Determine which IP to ping
-	targetIP := ep.IPv4
-	if ep.UseHop && ep.MonitoredHop != "" {
-		targetIP = ep.MonitoredHop
-	}
-
-	// Try to ping the target
-	result := s.pinger.Ping(targetIP)
+	result := s.pinger.Ping(ep.IPv4)
 
 	if result.Success {
 		return "up", time.Now()
 	}
 
-	// If using direct IP and ping failed, try traceroute to find a hop to monitor
-	if !ep.UseHop {
-		hopIP, hopNum, reached := s.tracer.FindLastRespondingHop(ep.IPv4)
-		if reached {
-			// Destination is reachable via traceroute but not ping (firewall?)
-			// Still mark as up since we reached it
-			return "up", time.Now()
-		}
-
-		if hopIP != "" && hopNum > 0 {
-			// Found a hop we can monitor instead
-			log.Printf("Endpoint %s (%s) not pingable, monitoring hop %d (%s) instead",
-				ep.ID, ep.ISP, hopNum, hopIP)
-
-			if err := s.db.UpdateMonitoredHop(ep.ID, hopIP, hopNum); err != nil {
-				log.Printf("Failed to update monitored hop for %s: %v", ep.ID, err)
-			}
-
-			// Update local state for the rest of this cycle
-			ep.UseHop = true
-			ep.MonitoredHop = hopIP
-			ep.HopNumber = hopNum
-
-			// Ping the hop
-			hopResult := s.pinger.Ping(hopIP)
-			if hopResult.Success {
-				return "up", time.Now()
-			}
-		}
-	}
-
-	// Ping failed
+	// Ping failed - mark as unreachable (user can still view dashboard)
 	if result.Error != nil {
-		log.Printf("Ping failed for %s (%s) target=%s: %v", ep.ID, ep.ISP, targetIP, result.Error)
+		log.Printf("Ping failed for %s (%s): %v", ep.ID, ep.ISP, result.Error)
 	}
 
-	return "down", time.Time{}
+	return "unreachable", time.Time{}
 }
 
 // analyzeISPOutages checks for common hop failures across endpoints from the same ISP

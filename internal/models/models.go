@@ -29,11 +29,12 @@ type ISPStatus struct {
 
 // StatusResponse is returned by GET /api/status
 type StatusResponse struct {
-	ISP         string     `json:"isp"`
-	Registered  bool       `json:"registered"`
-	CanRegister bool       `json:"can_register"` // True if ISP is allowed to register
-	EndpointID  *string    `json:"endpoint_id"`
-	ISPStatus   *ISPStatus `json:"isp_status,omitempty"`
+	ISP            string     `json:"isp"`
+	Registered     bool       `json:"registered"`
+	CanRegister    bool       `json:"can_register"`              // True if ISP is allowed to register
+	EndpointID     *string    `json:"endpoint_id"`
+	EndpointStatus string     `json:"endpoint_status,omitempty"` // "up", "down", "unreachable", "unknown"
+	ISPStatus      *ISPStatus `json:"isp_status,omitempty"`
 }
 
 // RegisterResponse is returned by POST /api/register

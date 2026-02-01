@@ -99,6 +99,7 @@ func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
 
 	if endpoint != nil {
 		response.EndpointID = &endpoint.ID
+		response.EndpointStatus = endpoint.Status
 		// Update last seen
 		if err := h.db.UpdateLastSeen(endpoint.ID); err != nil {
 			log.Printf("Failed to update last_seen for %s: %v", endpoint.ID, err)
