@@ -2,15 +2,18 @@ package storage
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
+	"github.com/jonsson/ccc/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	settingAdminPasswordHash = "admin_password_hash"
 	SettingOutageThreshold   = "outage_threshold"
+	SettingSiteConfig        = "site_config"
 )
 
 const (
@@ -106,4 +109,45 @@ func (db *DB) SetOutageThreshold(threshold float64) error {
 		return fmt.Errorf("threshold must be between 0 and 1")
 	}
 	return db.SetSetting(SettingOutageThreshold, strconv.FormatFloat(threshold, 'f', 2, 64))
+}
+
+// DefaultSiteConfig returns the default site configuration
+func DefaultSiteConfig() models.SiteConfig {
+	return models.SiteConfig{
+		SiteName:        "Community Connectivity Check",
+		SiteDescription: "Monitor ISP connectivity in our building",
+		AboutWhy:        "",
+		AboutHowItWorks: "",
+		AboutPrivacy:    "",
+		SupportedISPs:   []string{},
+		ContactEmail:    "",
+		FooterText:      "",
+		GithubURL:       "",
+	}
+}
+
+// GetSiteConfig returns the site configuration
+func (db *DB) GetSiteConfig() (models.SiteConfig, error) {
+	val, err := db.GetSetting(SettingSiteConfig)
+	if err != nil {
+		return DefaultSiteConfig(), err
+	}
+	if val == "" {
+		return DefaultSiteConfig(), nil
+	}
+
+	var config models.SiteConfig
+	if err := json.Unmarshal([]byte(val), &config); err != nil {
+		return DefaultSiteConfig(), fmt.Errorf("failed to parse site config: %w", err)
+	}
+	return config, nil
+}
+
+// SetSiteConfig saves the site configuration
+func (db *DB) SetSiteConfig(config models.SiteConfig) error {
+	data, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("failed to serialize site config: %w", err)
+	}
+	return db.SetSetting(SettingSiteConfig, string(data))
 }

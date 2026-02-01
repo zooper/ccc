@@ -628,3 +628,42 @@ func (h *Handler) AdminUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		OutageThreshold: h.db.GetOutageThreshold(),
 	})
 }
+
+// SiteConfig handles GET /api/site-config (public)
+func (h *Handler) SiteConfig(w http.ResponseWriter, r *http.Request) {
+	config, err := h.db.GetSiteConfig()
+	if err != nil {
+		log.Printf("Failed to get site config: %v", err)
+		// Return default config on error
+	}
+	writeJSON(w, http.StatusOK, config)
+}
+
+// AdminGetSiteConfig handles GET /api/admin/site-config
+func (h *Handler) AdminGetSiteConfig(w http.ResponseWriter, r *http.Request) {
+	config, err := h.db.GetSiteConfig()
+	if err != nil {
+		log.Printf("Failed to get site config: %v", err)
+		writeError(w, http.StatusInternalServerError, "Failed to get site config")
+		return
+	}
+	writeJSON(w, http.StatusOK, config)
+}
+
+// AdminUpdateSiteConfig handles PUT /api/admin/site-config
+func (h *Handler) AdminUpdateSiteConfig(w http.ResponseWriter, r *http.Request) {
+	var config models.SiteConfig
+	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid JSON body")
+		return
+	}
+
+	if err := h.db.SetSiteConfig(config); err != nil {
+		log.Printf("Failed to save site config: %v", err)
+		writeError(w, http.StatusInternalServerError, "Failed to save site config")
+		return
+	}
+
+	log.Printf("Admin updated site config")
+	writeJSON(w, http.StatusOK, config)
+}

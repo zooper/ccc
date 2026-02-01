@@ -119,3 +119,16 @@ type Event struct {
 	EndpointID string    `json:"endpoint_id,omitempty"`
 	Message    string    `json:"message"`
 }
+
+// SiteConfig contains customizable site content
+type SiteConfig struct {
+	SiteName        string   `json:"site_name"`
+	SiteDescription string   `json:"site_description"`
+	AboutWhy        string   `json:"about_why"`
+	AboutHowItWorks string   `json:"about_how_it_works"`
+	AboutPrivacy    string   `json:"about_privacy"`
+	SupportedISPs   []string `json:"supported_isps"`
+	ContactEmail    string   `json:"contact_email"`
+	FooterText      string   `json:"footer_text"`
+	GithubURL       string   `json:"github_url"`
+}

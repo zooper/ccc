@@ -1,4 +1,4 @@
-import type { StatusResponse, RegisterResponse, DashboardResponse, HealthResponse, AdminEndpoint, AdminAddRequest, AdminMetrics, EventsResponse, AdminSettings } from './types';
+import type { StatusResponse, RegisterResponse, DashboardResponse, HealthResponse, AdminEndpoint, AdminAddRequest, AdminMetrics, EventsResponse, AdminSettings, SiteConfig } from './types';
 
 const API_BASE = '/api';
 
@@ -89,5 +89,25 @@ export async function adminUpdateSettings(password: string, settings: AdminSetti
     method: 'PUT',
     headers: authHeader(password),
     body: JSON.stringify(settings),
+  });
+}
+
+// Site config (public)
+export async function getSiteConfig(): Promise<SiteConfig> {
+  return fetchJSON<SiteConfig>(`${API_BASE}/site-config`);
+}
+
+// Admin site config
+export async function adminGetSiteConfig(password: string): Promise<SiteConfig> {
+  return fetchJSON<SiteConfig>(`${API_BASE}/admin/site-config`, {
+    headers: authHeader(password),
+  });
+}
+
+export async function adminUpdateSiteConfig(password: string, config: SiteConfig): Promise<SiteConfig> {
+  return fetchJSON<SiteConfig>(`${API_BASE}/admin/site-config`, {
+    method: 'PUT',
+    headers: authHeader(password),
+    body: JSON.stringify(config),
   });
 }

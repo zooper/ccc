@@ -106,3 +106,15 @@ export interface AdminMetrics {
 export interface AdminSettings {
   outage_threshold: number;
 }
+
+export interface SiteConfig {
+  site_name: string;
+  site_description: string;
+  about_why: string;
+  about_how_it_works: string;
+  about_privacy: string;
+  supported_isps: string[];
+  contact_email: string;
+  footer_text: string;
+  github_url: string;
+}

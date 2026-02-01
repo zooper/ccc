@@ -13,6 +13,7 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux, staticFS fs.FS) {
 	mux.HandleFunc("POST /api/register", h.Register)
 	mux.HandleFunc("GET /api/dashboard", h.Dashboard)
 	mux.HandleFunc("GET /api/events", h.Events)
+	mux.HandleFunc("GET /api/site-config", h.SiteConfig)
 
 	// Admin API routes (protected by basic auth)
 	mux.HandleFunc("GET /api/admin/endpoints", h.requireAdminAuth(h.AdminListEndpoints))
@@ -21,6 +22,8 @@ func (h *Handler) SetupRoutes(mux *http.ServeMux, staticFS fs.FS) {
 	mux.HandleFunc("GET /api/admin/metrics", h.requireAdminAuth(h.AdminMetrics))
 	mux.HandleFunc("GET /api/admin/settings", h.requireAdminAuth(h.AdminGetSettings))
 	mux.HandleFunc("PUT /api/admin/settings", h.requireAdminAuth(h.AdminUpdateSettings))
+	mux.HandleFunc("GET /api/admin/site-config", h.requireAdminAuth(h.AdminGetSiteConfig))
+	mux.HandleFunc("PUT /api/admin/site-config", h.requireAdminAuth(h.AdminUpdateSiteConfig))
 
 	// Static files (if provided)
 	if staticFS != nil {
