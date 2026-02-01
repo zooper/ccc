@@ -148,14 +148,28 @@ function App() {
       padding: '40px',
       color: colors.textMuted,
     },
+    nav: {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: '15px',
+      marginBottom: '20px',
+      padding: '10px 0',
+    },
+    navLink: {
+      color: colors.textMuted,
+      cursor: 'pointer',
+      fontSize: '0.875rem',
+      textDecoration: 'none',
+      padding: '6px 12px',
+      borderRadius: '6px',
+      transition: 'color 0.2s',
+    },
     themeToggle: {
-      position: 'fixed' as const,
-      top: '15px',
-      right: '15px',
       background: colors.bgCard,
       border: `1px solid ${colors.border}`,
-      borderRadius: '8px',
-      padding: '8px 12px',
+      borderRadius: '6px',
+      padding: '6px 12px',
       cursor: 'pointer',
       color: colors.text,
       fontSize: '0.875rem',
@@ -202,9 +216,17 @@ function App() {
 
   return (
     <div style={styles.container}>
-      <button style={styles.themeToggle} onClick={toggleTheme}>
-        {theme === 'dark' ? 'Light' : 'Dark'}
-      </button>
+      <nav style={styles.nav}>
+        <span
+          style={styles.navLink}
+          onClick={() => { window.history.pushState({}, '', '/about'); setShowAbout(true); }}
+        >
+          About
+        </span>
+        <button style={styles.themeToggle} onClick={toggleTheme}>
+          {theme === 'dark' ? 'Light' : 'Dark'}
+        </button>
+      </nav>
 
       <header style={styles.header}>
         <h1 style={styles.title}>Community Connectivity Check</h1>
@@ -248,21 +270,6 @@ function App() {
         <Dashboard data={dashboard} currentISP={status?.isp} colors={colors} events={events} />
       )}
 
-      <footer style={{
-        marginTop: '40px',
-        paddingTop: '20px',
-        borderTop: `1px solid ${colors.border}`,
-        textAlign: 'center',
-        fontSize: '0.875rem',
-        color: colors.textDimmed,
-      }}>
-        <span
-          style={{ color: colors.accent, cursor: 'pointer' }}
-          onClick={() => { window.history.pushState({}, '', '/about'); setShowAbout(true); }}
-        >
-          About
-        </span>
-      </footer>
     </div>
   );
 }
