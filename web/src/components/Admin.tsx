@@ -571,29 +571,6 @@ function Admin({ onBack, colors }: AdminProps) {
           </div>
         </div>
 
-        {/* Uptime History */}
-        {metrics.uptime_history.length > 0 && (
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Uptime History (Last 24h)</div>
-            <div style={styles.historyList}>
-              {metrics.uptime_history.slice(-20).reverse().map((point, i) => (
-                <div key={i} style={styles.historyItem}>
-                  <span style={{ color: colors.textMuted }}>{formatTime(point.timestamp)}</span>
-                  <span>
-                    <span style={{ color: colors.success }}>{point.up} up</span>
-                    {' / '}
-                    <span style={{ color: colors.danger }}>{point.down} down</span>
-                    {' '}
-                    <span style={{ color: getUptimeColor(point.uptime_pct) }}>
-                      ({point.uptime_pct.toFixed(1)}%)
-                    </span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* System Info */}
         <div style={styles.section}>
           <div style={styles.sectionTitle}>System</div>

@@ -191,18 +191,6 @@ func (s *Scheduler) runPingCycle() {
 	s.pingCycleCount++
 	s.pingCycleMu.Unlock()
 
-	// Record uptime history
-	if err := s.db.RecordUptimeSnapshot(len(endpoints), upCount, downCount); err != nil {
-		log.Printf("Failed to record uptime snapshot: %v", err)
-	}
-
-	// Cleanup old history (keep 7 days)
-	if deleted, err := s.db.CleanupOldHistory(7 * 24 * time.Hour); err != nil {
-		log.Printf("Failed to cleanup old history: %v", err)
-	} else if deleted > 0 {
-		log.Printf("Cleaned up %d old history records", deleted)
-	}
-
 	// Cleanup old events (keep 7 days)
 	if deleted, err := s.db.CleanupOldEvents(7 * 24 * time.Hour); err != nil {
 		log.Printf("Failed to cleanup old events: %v", err)
