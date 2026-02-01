@@ -157,15 +157,6 @@ function App() {
       padding: '10px 0',
     },
     navLink: {
-      color: colors.textMuted,
-      cursor: 'pointer',
-      fontSize: '0.875rem',
-      textDecoration: 'none',
-      padding: '6px 12px',
-      borderRadius: '6px',
-      transition: 'color 0.2s',
-    },
-    themeToggle: {
       background: colors.bgCard,
       border: `1px solid ${colors.border}`,
       borderRadius: '6px',
@@ -173,6 +164,17 @@ function App() {
       cursor: 'pointer',
       color: colors.text,
       fontSize: '0.875rem',
+      textDecoration: 'none',
+    },
+    themeToggle: {
+      background: 'transparent',
+      border: 'none',
+      borderRadius: '6px',
+      padding: '6px',
+      cursor: 'pointer',
+      color: colors.textMuted,
+      fontSize: '1.25rem',
+      lineHeight: 1,
     },
     registered: {
       background: colors.bgCardAlt,
@@ -187,8 +189,8 @@ function App() {
   if (showAdmin) {
     return (
       <div style={styles.container}>
-        <button style={styles.themeToggle} onClick={toggleTheme}>
-          {theme === 'dark' ? 'Light' : 'Dark'}
+        <button style={styles.themeToggle} onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
         </button>
         <Admin onBack={navigateToHome} colors={colors} />
       </div>
@@ -198,8 +200,8 @@ function App() {
   if (showAbout) {
     return (
       <div style={styles.container}>
-        <button style={styles.themeToggle} onClick={toggleTheme}>
-          {theme === 'dark' ? 'Light' : 'Dark'}
+        <button style={styles.themeToggle} onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
         </button>
         <About onBack={navigateToHome} colors={colors} />
       </div>
@@ -223,8 +225,8 @@ function App() {
         >
           About
         </span>
-        <button style={styles.themeToggle} onClick={toggleTheme}>
-          {theme === 'dark' ? 'Light' : 'Dark'}
+        <button style={styles.themeToggle} onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
         </button>
       </nav>
 
