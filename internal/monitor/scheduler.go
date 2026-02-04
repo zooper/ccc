@@ -178,6 +178,13 @@ func (s *Scheduler) runPingCycle() {
 		if err := s.db.UpdateStatus(result.endpoint.ID, result.newStatus, result.lastOK); err != nil {
 			log.Printf("Failed to update status for %s: %v", result.endpoint.ID, err)
 		}
+
+		// Update last_seen when endpoint responds to ping (prevents expiration)
+		if result.newStatus == "up" {
+			if err := s.db.UpdateLastSeen(result.endpoint.ID); err != nil {
+				log.Printf("Failed to update last_seen for %s: %v", result.endpoint.ID, err)
+			}
+		}
 	}
 
 	log.Printf("Ping cycle complete: %d up, %d down", upCount, downCount)
